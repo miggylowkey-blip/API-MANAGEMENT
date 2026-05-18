@@ -1,0 +1,9 @@
+Structure DB
+Make A Database on PostgreSQL
+make a .env file
+make a docker file
+make a .ignoredocker file 
+make a ci/cd 
+make a .githubignore 
+
+And rest for today

@@ -1,0 +1,35 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: api-managementz-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: api_managementz
+      POSTGRES_USER: api_managementz
+      POSTGRES_PASSWORD: api_managementz
+    ports:
+      - "5432:5432"
+    volumes:
+      - api_managementz_pgdata:/var/lib/postgresql/data
+      - ./migrations/001_init.sql:/docker-entrypoint-initdb.d/001_init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U api_managementz -d api_managementz"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  redis: 
+    image: redis:7-alpine
+    container_name: api-managementz-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+
+volumes:
+  api_managementz_pgdata:

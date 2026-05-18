@@ -1,0 +1,12 @@
+.git
+.idea
+.vscode
+
+bin
+dist
+
+*.log
+*.tmp
+*.local
+
+.env
