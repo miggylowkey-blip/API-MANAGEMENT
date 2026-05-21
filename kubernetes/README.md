@@ -43,6 +43,20 @@ If your cluster cannot expose a `LoadBalancer`, forward the API port locally ins
 kubectl port-forward svc/api-managementz 8080:80 -n api-managementz
 ```
 
+## Kubernetes security hardening
+
+The deployment manifests have been enhanced to improve runtime security and kubesec scores.
+
+- `securityContext` is set at the pod and container level to enforce non-root execution.
+- `runAsNonRoot`, `runAsUser`, `runAsGroup`, and `fsGroup` are configured for each workload.
+- `automountServiceAccountToken: false` prevents unnecessary service account token mounting.
+- `privileged: false` and `allowPrivilegeEscalation: false` block privilege escalation.
+- `capabilities.drop: [ALL]` removes extra Linux capabilities from containers.
+- `seccompProfile: RuntimeDefault` enables standard kernel syscall filtering.
+- The API deployment uses an explicit registry image tag, so the image reference is immutable and reproducible.
+
+These settings make the Postgres, Redis, and API workloads more secure by reducing attack surface and limiting runtime privileges.
+
 ## API image configuration
 
 The API deployment uses a container image reference in `10-api-deployment.yml`. Replace `api-managementz:latest` with your registry and tag, for example:

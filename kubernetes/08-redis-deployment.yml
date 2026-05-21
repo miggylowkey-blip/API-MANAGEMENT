@@ -18,6 +18,7 @@ spec:
         runAsUser: 1001
         runAsGroup: 1001
         fsGroup: 1001
+      automountServiceAccountToken: false
       containers:
         - name: redis
           image: redis:7-alpine
@@ -26,6 +27,7 @@ spec:
             privileged: false
             allowPrivilegeEscalation: false
             runAsNonRoot: true
+            readOnlyRootFilesystem: false
             capabilities:
               drop:
                 - ALL

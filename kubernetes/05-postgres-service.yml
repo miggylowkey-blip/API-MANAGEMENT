@@ -11,3 +11,8 @@ spec:
       targetPort: 5432
       protocol: TCP
   type: ClusterIP
+  sessionAffinity: None
+  internalTrafficPolicy: Local
+  ipFamilyPolicy: SingleStack
+  ipFamilies:
+    - IPv4

@@ -92,6 +92,14 @@ kubectl create secret generic api-managementz-secrets \
 
 If you are using a remote registry, update `kubernetes/10-api-deployment.yml` with the correct image reference.
 
+The Kubernetes manifests now include stronger runtime security settings for the Redis, Postgres, and API deployments:
+
+- pod and container `securityContext` to enforce non-root execution
+- `automountServiceAccountToken: false`
+- `privileged: false` and `allowPrivilegeEscalation: false`
+- dropped Linux capabilities and `seccompProfile: RuntimeDefault`
+- explicit SHA-tagged image reference for the API deployment
+
 If your cluster does not support `LoadBalancer`, port-forward the API service instead:
 
 ```bash
