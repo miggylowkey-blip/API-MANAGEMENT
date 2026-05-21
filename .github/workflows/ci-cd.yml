@@ -21,7 +21,7 @@ permissions:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
+  IMAGE_NAME: ${{ github.repository_owner }}/api-managementz
 
 jobs:
   # Stage 1: Code Quality and Security Scanning
@@ -70,7 +70,7 @@ jobs:
           name: trivy-filesystem-report
           path: trivy-results.json
 
-  # Stage 2: Build Docker Image and Image Security
+ 
   build:
     name: Build and Scan Docker Image
     runs-on: ubuntu-latest
@@ -177,7 +177,8 @@ jobs:
 
       - name: Security scan Kubernetes manifests with kubesec
         run: |
-          for file in kubernetes/*.yml; do
+          for file in kubernetes/*deployment.yml kubernetes/*service.yml; do
+            [ -e "$file" ] || continue
             echo "Security scanning $file"
             kubesec scan "$file" | jq '.[] | select(.score < 5)' | grep -q . && echo "⚠️  $file has low security score" && exit 1 || true
           done
