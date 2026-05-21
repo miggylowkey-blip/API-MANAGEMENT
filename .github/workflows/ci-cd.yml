@@ -60,8 +60,8 @@ jobs:
           scan-ref: .
           severity: CRITICAL,HIGH
           exit-code: 1
-          format: sarif
-          output: trivy-results.sarif
+          format: json
+          output: trivy-results.json
 
       - name: Upload Trivy SARIF report
         uses: github/codeql-action/upload-sarif@v3
