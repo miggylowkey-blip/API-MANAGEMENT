@@ -63,11 +63,12 @@ jobs:
           format: json
           output: trivy-results.json
 
-      - name: Upload Trivy SARIF report
-        uses: github/codeql-action/upload-sarif@v3
+      - name: Upload Trivy JSON report
+        uses: actions/upload-artifact@v4
         if: always()
         with:
-          sarif_file: trivy-results.sarif
+          name: trivy-filesystem-report
+          path: trivy-results.json
 
   # Stage 2: Build Docker Image and Image Security
   build:
@@ -122,15 +123,16 @@ jobs:
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: ${{ steps.meta.outputs.tags }}
-          format: sarif
-          output: trivy-image-results.sarif
+          format: json
+          output: trivy-image-results.json
           severity: CRITICAL,HIGH
 
-      - name: Upload Trivy image SARIF report
-        uses: github/codeql-action/upload-sarif@v3
+      - name: Upload Trivy image JSON report
+        uses: actions/upload-artifact@v4
         if: always()
         with:
-          sarif_file: trivy-image-results.sarif
+          name: trivy-image-report
+          path: trivy-image-results.json
 
       - name: Generate SBOM (Syft)
         uses: anchore/sbom-action@v0
