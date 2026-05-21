@@ -207,7 +207,7 @@ jobs:
           chmod 600 $HOME/.kube/config
 
       - name: Create namespace
-        run: kubectl create namespace api-managementz --dry-run=client --validate=false -o yaml | kubectl apply -f -
+        run: kubectl create namespace api-managementz --dry-run=client --validate=false -o yaml | kubectl apply --validate=false -f -
 
       - name: Update image in deployment
         run: |
