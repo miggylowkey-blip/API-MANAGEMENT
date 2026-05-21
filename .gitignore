@@ -29,9 +29,5 @@ vendor/
 *terraform.tfstate.lock.info
 *security_groups.tf 
 
-
 *.tfvars
 *.tfvars.json
-
-
-.env

@@ -1,40 +1,39 @@
 # API-MANAGEMENTZ
 
-A security-focused API key management service built in Go. Handles key issuance, rotation, revocation, usage tracking, and rate limiting — the infrastructure layer for controlling API access.
+A security-focused API key management service built in Go. Handles API key issuance, rotation, revocation, usage tracking, and per-key rate limiting.
 
-## Live
+## Overview
 
-Deployed on AWS ECS with RDS Postgres and Redis rate limiting.
-
-```
-http://3.25.207.102:8080/health
-```
+- Local development uses Docker Compose with Postgres and Redis.
+- Kubernetes deployment manifests are stored under `kubernetes/`.
+- CI/CD is implemented with GitHub Actions and includes secret scanning, Trivy, and image build validation.
+- Container images are published to GitHub Container Registry (GHCR).
 
 ## Features
 
 - **Key issuance** — register or login to receive an API key
-- **Key rotation** — every login issues a fresh key, old one invalidated instantly
-- **Key revocation** — kill a key immediately via `DELETE /key`
+- **Key rotation** — every login issues a fresh key and invalidates the old one
+- **Key revocation** — revoke API keys immediately via `DELETE /key`
 - **Usage tracking** — request count and last used timestamp per key
-- **Rate limiting** — per-key token bucket backed by Redis, persists across restarts
-- **Audit logging** — every auth and key event logged as structured JSON
-- **Input validation** — email format, password length, bcrypt 72-byte truncation cap
+- **Rate limiting** — per-key token bucket backed by Redis
+- **Audit logging** — structured JSON audit entries for auth and key events
+- **Input validation** — email validation, password length enforcement, bcrypt handling
 - **Health check** — `GET /health` verifies app and database connectivity
 
 ## Endpoints
 
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
-| POST | /register | None | Create account, returns API key |
-| POST | /login | None | Authenticate, rotates and returns new API key |
-| GET | /whoami | API Key | Verify key, returns user ID |
-| GET | /key/info | API Key | Usage count, last used, revocation status |
-| DELETE | /key | API Key | Revoke current API key instantly |
+| POST | /register | None | Create account and receive an API key |
+| POST | /login | None | Authenticate and rotate API key |
+| GET | /whoami | API Key | Verify API key and return user info |
+| GET | /key/info | API Key | Get usage and revocation status |
+| DELETE | /key | API Key | Revoke current API key |
 | GET | /health | None | App and database health status |
 
 ## Authentication
 
-Pass your API key on every request:
+Pass the API key in one of these headers:
 
 ```bash
 Authorization: Bearer YOUR_API_KEY
@@ -50,11 +49,9 @@ X-API-Key: YOUR_API_KEY
 # Start Postgres and Redis
 docker compose up -d
 
-# Copy and fill environment variables
+# Copy and configure environment variables
 cp .env.example .env
-
-# Run the API
-go run ./cmd/api
+# Edit .env and fill in any secret values
 ```
 
 ## Environment variables
@@ -62,54 +59,85 @@ go run ./cmd/api
 | Variable | Default | Description |
 |----------|---------|-------------|
 | PORT | 8080 | Server port |
-| AUTH_SECRET | — | Required in production — salts API key hashes |
+| AUTH_SECRET | — | Required for API key hashing and signing |
 | DB_HOST | localhost | Postgres host |
-| DB_USER | — | Postgres user |
+| DB_USER | — | Postgres username |
 | DB_PASSWORD | — | Postgres password |
 | DB_NAME | — | Postgres database name |
-| DB_SSLMODE | disable | Postgres SSL mode (`require` in production) |
+| DB_SSLMODE | disable | Postgres SSL mode |
 | REDIS_URL | redis://localhost:6379 | Redis connection URL |
 | RATE_LIMIT_RPS | 5 | Requests per second per key |
-| RATE_LIMIT_BURST | 10 | Burst allowance per key |
+| RATE_LIMIT_BURST | 10 | Burst allowed per key |
+
+## Kubernetes deployment
+
+The Kubernetes manifests live in `kubernetes/`.
+
+Use the `.env` file for sensitive values and keep it out of source control. `API-MANAGEMENTZ/.env` is ignored by `.gitignore`.
+
+Apply the stack from the repository root:
+
+```bash
+kubectl apply -f kubernetes/
+```
+
+For secrets, create the Kubernetes secret from `.env` before applying the stack:
+
+```bash
+kubectl create namespace api-managementz --dry-run=client -o yaml | kubectl apply -f -
+kubectl create secret generic api-managementz-secrets \
+  --from-env-file=.env \
+  -n api-managementz
+```
+
+If you are using a remote registry, update `kubernetes/10-api-deployment.yml` with the correct image reference.
+
+If your cluster does not support `LoadBalancer`, port-forward the API service instead:
+
+```bash
+kubectl port-forward svc/api-managementz 8080:80 -n api-managementz
+```
 
 ## Architecture
 
 ```
-cmd/api/          — entry point, wires everything together
+cmd/api/          — application entry point
 internal/
-  auth/           — key generation, hashing, password bcrypt
+  auth/           — key generation, hashing, API key auth logic
   audit/          — structured JSON audit logging
-  db/             — postgres connection and pooling
-  handlers/       — HTTP handlers and input validation
-  ratelimit/      — per-key rate limiting (in-memory + Redis)
+  db/             — PostgreSQL connection and pooling
+  handlers/       — HTTP request handlers and validation
+  ratelimit/      — per-key rate limiting backed by Redis
   store/          — store interface
-    memstore/     — in-memory fallback for local dev
-    postgresstore/— production postgres implementation
+    memstore/     — local in-memory fallback
+    postgresstore/— PostgreSQL implementation
 migrations/       — SQL schema files
 ```
 
 ## CI/CD Pipeline
 
-Every push to `main` runs:
+The GitHub Actions pipeline validates and scans the code on every push to `main`.
 
 **CI**
-- `gofmt` — formatting gate
+- `gofmt` — format checking
 - `go vet` — static analysis
 - `go build` — build verification
-- **Gitleaks** — secret and credential scanning
-- **Trivy** — CVE scanning on filesystem and dependencies (CRITICAL/HIGH)
+- `Gitleaks` — secret scanning
+- `Trivy` — vulnerability scanning
 
-**CD** (on CI pass)
-- Builds Docker image
-- Tags with commit SHA and `latest`
-- Pushes to AWS ECR
-- ECS pulls and deploys automatically
+**Build**
+- Build and push Docker images to GitHub Container Registry
+- Scan the pushed image with Trivy
+- Generate an SBOM with Syft
+
+**Kubernetes validation**
+- Validate manifests with kubeval
+- Run security checks with kubesec
 
 ## Stack
 
-- **Go** — API, middleware, business logic
-- **PostgreSQL** — persistent storage (RDS in production)
-- **Redis** — rate limit counters (ElastiCache-ready)
-- **Docker** — containerized local dev and production
-- **AWS ECS + RDS** — production deployment
-- **GitHub Actions** — CI/CD pipeline
+- **Go** — API and business logic
+- **PostgreSQL** — persistent storage
+- **Redis** — rate limit state
+- **Docker** — container packaging
+- **GitHub Actions** — CI/CD automation

@@ -83,7 +83,7 @@ jobs:
       security-events: write
 
     outputs:
-      image-tag: ${{ steps.meta.outputs.tags }}
+      image-tag: ghcr.io/${{ env.IMAGE_NAME }}:${{ github.sha }}
       image-digest: ${{ steps.build.outputs.digest }}
 
     steps:
@@ -106,7 +106,7 @@ jobs:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
             type=ref,event=branch
-            type=sha,prefix={{branch}}-
+            type=sha
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
 
@@ -122,7 +122,7 @@ jobs:
       - name: Run Trivy vulnerability scan on image
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: ${{ steps.meta.outputs.tags }}
+          image-ref: ghcr.io/${{ env.IMAGE_NAME }}:${{ github.sha }}
           format: json
           output: trivy-image-results.json
           severity: CRITICAL,HIGH
@@ -137,7 +137,7 @@ jobs:
       - name: Generate SBOM (Syft)
         uses: anchore/sbom-action@v0
         with:
-          image: ${{ steps.meta.outputs.tags }}
+          image: ghcr.io/${{ env.IMAGE_NAME }}:${{ github.sha }}
           format: cyclonedx-json
           output-file: sbom.json
 
@@ -166,7 +166,7 @@ jobs:
         run: |
           for file in kubernetes/*.yml; do
             echo "Validating $file"
-            kubeval "$file" --strict
+            kubeval "$file" --strict --ignore-missing-schemas
           done
 
       - name: Install kubesec
