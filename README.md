@@ -1,151 +1,359 @@
-# API-MANAGEMENTZ
+# Kubesec
 
-A security-focused API key management service built in Go. Handles API key issuance, rotation, revocation, usage tracking, and per-key rate limiting.
+[![Testing Workflow][testing_workflow_badge]][testing_workflow_badge]
+[![Security Analysis Workflow][security_workflow_badge]][security_workflow_badge]
+[![Release Workflow][release_workflow_badge]][release_workflow_badge]
 
-## Overview
+[![Go Report Card][goreportcard_badge]][goreportcard]
+[![PkgGoDev][go_dev_badge]][go_dev]
 
-- Local development uses Docker Compose with Postgres and Redis.
-- Kubernetes deployment manifests are stored under `kubernetes/`.
-- CI/CD is implemented with GitHub Actions and includes secret scanning, Trivy, and image build validation.
-- Container images are published to GitHub Container Registry (GHCR).
+<!-- markdownlint-disable no-inline-html header-increment -->
+<!-- markdownlint-disable line-length -->
 
-## Features
+#### <center>🚨 v1 API is deprecated, please read the <a href="https://github.com/controlplaneio/kubesec/blob/master/README.md#release-notes" target="_blank">release notes</a> 🚨</center>
 
-- **Key issuance** — register or login to receive an API key
-- **Key rotation** — every login issues a fresh key and invalidates the old one
-- **Key revocation** — revoke API keys immediately via `DELETE /key`
-- **Usage tracking** — request count and last used timestamp per key
-- **Rate limiting** — per-key token bucket backed by Redis
-- **Audit logging** — structured JSON audit entries for auth and key events
-- **Input validation** — email validation, password length enforcement, bcrypt handling
-- **Health check** — `GET /health` verifies app and database connectivity
+<!-- markdownlint-enable line-length -->
 
-## Endpoints
+### Security risk analysis for Kubernetes resources
 
-| Method | Path | Auth | Description |
-|--------|------|------|-------------|
-| POST | /register | None | Create account and receive an API key |
-| POST | /login | None | Authenticate and rotate API key |
-| GET | /whoami | API Key | Verify API key and return user info |
-| GET | /key/info | API Key | Get usage and revocation status |
-| DELETE | /key | API Key | Revoke current API key |
-| GET | /health | None | App and database health status |
+<p align="center">
+  <img src="https://casual-hosting.s3.amazonaws.com/kubesec-logo.png">
+</p>
 
-## Authentication
+## Live demo
 
-Pass the API key in one of these headers:
+[Visit Kubesec.io](https://kubesec.io)
 
-```bash
-Authorization: Bearer YOUR_API_KEY
-# or
-X-API-Key: YOUR_API_KEY
-```
+This uses ControlPlane's hosted API at [v2.kubesec.io/scan](https://v2.kubesec.io/scan)
 
-## Run locally
+---
 
-**Prerequisites:** Docker, Go 1.24+
+- [Download Kubesec](#download-kubesec)
+  - [Command line usage](#command-line-usage)
+  - [Usage example](#usage-example)
+  - [Docker usage](#docker-usage)
+- [Kubesec HTTP Server](#kubesec-http-server)
+  - [CLI usage example](#cli-usage-example)
+  - [Docker usage example](#docker-usage-example)
+- [Kubesec-as-a-Service](#kubesec-as-a-service)
+  - [Command line usage](#command-line-usage-1)
+  - [Usage example](#usage-example-1)
+- [Example output](#example-output)
+- [Contributors](#contributors)
+- [Getting Help](#getting-help)
+- [Contributing](/CONTRIBUTING.md)
+- [Changelog](/CHANGELOG.md)
 
-```bash
-# Start Postgres and Redis
-docker compose up -d
+## Download Kubesec
 
-# Copy and configure environment variables
-cp .env.example .env
-# Edit .env and fill in any secret values
-```
+Kubesec is available as a:
 
-## Environment variables
+- [Docker container image](https://hub.docker.com/r/kubesec/kubesec/tags) at `docker.io/kubesec/kubesec:v2`
+- Linux/MacOS/Win binary (get the [latest release](https://github.com/controlplaneio/kubesec/releases))
+- [Kubernetes Admission Controller](https://github.com/controlplaneio/kubesec-webhook)
+- [Kubectl plugin](https://github.com/controlplaneio/kubectl-kubesec)
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| PORT | 8080 | Server port |
-| AUTH_SECRET | — | Required for API key hashing and signing |
-| DB_HOST | localhost | Postgres host |
-| DB_USER | — | Postgres username |
-| DB_PASSWORD | — | Postgres password |
-| DB_NAME | — | Postgres database name |
-| DB_SSLMODE | disable | Postgres SSL mode |
-| REDIS_URL | redis://localhost:6379 | Redis connection URL |
-| RATE_LIMIT_RPS | 5 | Requests per second per key |
-| RATE_LIMIT_BURST | 10 | Burst allowed per key |
+Or install the latest commit from GitHub with:
 
-## Kubernetes deployment
-
-The Kubernetes manifests live in `kubernetes/`.
-
-Use the `.env` file for sensitive values and keep it out of source control. `API-MANAGEMENTZ/.env` is ignored by `.gitignore`.
-
-Apply the stack from the repository root:
+#### Go 1.16+
 
 ```bash
-kubectl apply -f kubernetes/
+$ go install github.com/controlplaneio/kubesec/v2@latest
 ```
 
-For secrets, create the Kubernetes secret from `.env` before applying the stack:
+#### Go version < 1.16
 
 ```bash
-kubectl create namespace api-managementz --dry-run=client -o yaml | kubectl apply -f -
-kubectl create secret generic api-managementz-secrets \
-  --from-env-file=.env \
-  -n api-managementz
+$ GO111MODULE="on" go get github.com/controlplaneio/kubesec/v2
 ```
 
-If you are using a remote registry, update `kubernetes/10-api-deployment.yml` with the correct image reference.
-
-The Kubernetes manifests now include stronger runtime security settings for the Redis, Postgres, and API deployments:
-
-- pod and container `securityContext` to enforce non-root execution
-- `automountServiceAccountToken: false`
-- `privileged: false` and `allowPrivilegeEscalation: false`
-- dropped Linux capabilities and `seccompProfile: RuntimeDefault`
-- explicit SHA-tagged image reference for the API deployment
-
-If your cluster does not support `LoadBalancer`, port-forward the API service instead:
+#### Command line usage:
 
 ```bash
-kubectl port-forward svc/api-managementz 8080:80 -n api-managementz
+$ kubesec scan k8s-deployment.yaml
 ```
 
-## Architecture
+#### Usage example:
 
+```bash
+$ cat <<EOF > kubesec-test.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: kubesec-demo
+spec:
+  containers:
+  - name: kubesec-demo
+    image: gcr.io/google-samples/node-hello:1.0
+    securityContext:
+      readOnlyRootFilesystem: true
+EOF
+$ kubesec scan kubesec-test.yaml
 ```
-cmd/api/          — application entry point
-internal/
-  auth/           — key generation, hashing, API key auth logic
-  audit/          — structured JSON audit logging
-  db/             — PostgreSQL connection and pooling
-  handlers/       — HTTP request handlers and validation
-  ratelimit/      — per-key rate limiting backed by Redis
-  store/          — store interface
-    memstore/     — local in-memory fallback
-    postgresstore/— PostgreSQL implementation
-migrations/       — SQL schema files
+
+#### Docker usage:
+
+Run the same command in Docker:
+
+```bash
+$ docker run -i kubesec/kubesec:v2 scan /dev/stdin < kubesec-test.yaml
 ```
 
-## CI/CD Pipeline
+#### Specify custom schema
 
-The GitHub Actions pipeline validates and scans the code on every push to `main`.
+Kubesec leverages kubeconform (thanks @yannh) to validate the manifests to scan.
+This implies that specifying different schema locations follows the rules as
+described in [the kubeconform README](https://github.com/yannh/kubeconform#overriding-schemas-location).
 
-**CI**
-- `gofmt` — format checking
-- `go vet` — static analysis
-- `go build` — build verification
-- `Gitleaks` — secret scanning
-- `Trivy` — vulnerability scanning
+Here is a quick overview on how this work for scanning a pod manifest:
 
-**Build**
-- Build and push Docker images to GitHub Container Registry
-- Scan the pushed image with Trivy
-- Generate an SBOM with Syft
+- I want to use the latest available schema from upstream.
 
-**Kubernetes validation**
-- Validate manifests with kubeval
-- Run security checks with kubesec
+```bash
+kubesec [scan|http]
+```
 
-## Stack
+Schema will be fetched from: https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master/master-standalone-strict/pod-v1.json
 
-- **Go** — API and business logic
-- **PostgreSQL** — persistent storage
-- **Redis** — rate limit state
-- **Docker** — container packaging
-- **GitHub Actions** — CI/CD automation
+- I want to use a specific schema version from upstream. (Formatted x.y.z with no v prefix)
+
+```bash
+kubesec [scan|http] --kubernetes-version <version>
+```
+
+Schema will be fetched from: https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master/v1.25.3-standalone-strict/pod-v1.json
+
+- I want to use a specific schema version in an airgap environment over HTTP.
+
+```bash
+kubesec [scan|http] --kubernetes-version <version> --schema-location https://host.server
+```
+
+Schema will be fetched from: `https://host.server/v<version>-standalone-strict/pod-v1.json`
+
+- I want to use a specific schema version in an airgap environment with local files:
+
+```bash
+kubesec [scan|http] --kubernetes-version <version> --schema-location /opt/schemas
+```
+
+Schema will be read from: `/opt/schemas/v<version>-standalone-strict/pod-v1.json`
+
+**Note:** in order to limit external network calls and allow usage in airgap
+environments, the `kubesec` image embeds schemas. If you are looking to change
+the schema location, you'll need to change the `K8S_SCHEMA_VER` and `SCHEMA_LOCATION`
+environment variables at runtime.
+
+#### Print the scanning rules with their associated scores
+
+All the scanning rules can be printed in in different formats (json (default),
+yaml and table). This is useful to easily get the point associated with
+each rule:
+
+```bash
+kubesec print-rules
+```
+
+which produces the following output:
+
+```json
+[
+  {
+    "id": "AllowPrivilegeEscalation",
+    "selector": "containers[] .securityContext .allowPrivilegeEscalation == true",
+    "reason": "Ensure a non-root process can not gain more privileges",
+    "kinds": [
+      "Pod",
+      "Deployment",
+      "StatefulSet",
+      "DaemonSet"
+    ],
+    "points": -7,
+    "advise": 0
+  },
+...
+]
+```
+
+## Kubesec HTTP Server
+
+Kubesec includes a bundled HTTP server
+
+The listen address for the HTTP server can be configured by setting
+`KUBESEC_ADDR` environment variable. The value can be a single port
+such as `8080` or an address in the form of `ip:port` or `[ipv6]:port`.
+
+#### CLI usage example:
+
+Start the HTTP server in the background
+
+<!-- markdownlint-disable line-length -->
+
+```bash
+$ kubesec http 8080 &
+[1] 12345
+{"severity":"info","timestamp":"2019-05-12T11:58:34.662+0100","caller":"server/server.go:69","message":"Starting HTTP server on port 8080"}
+```
+
+<!-- markdownlint-enable line-length -->
+
+Use curl to POST a file to the server
+
+```bash
+$ curl -sSX POST --data-binary @test/asset/score-0-cap-sys-admin.yml http://localhost:8080/scan
+[
+  {
+    "object": "Pod/security-context-demo.default",
+    "valid": true,
+    "message": "Failed with a score of -30 points",
+    "score": -30,
+    "scoring": {
+      "critical": [
+        {
+          "selector": "containers[] .securityContext .capabilities .add == SYS_ADMIN",
+          "reason": "CAP_SYS_ADMIN is the most privileged capability and should always be avoided",
+          "points": -30
+        },
+        {
+          "selector": "containers[] .securityContext .runAsNonRoot == true",
+          "reason": "Force the running image to run as a non-root user to ensure least privilege",
+          "points": 1
+        },
+  // ...
+```
+
+Finally, stop the Kubesec server by killing the background process
+
+```bash
+$ kill %
+```
+
+#### Docker usage example:
+
+Start the HTTP server using Docker
+
+```bash
+$ docker run -d -p 8080:8080 kubesec/kubesec:v2 http 8080
+```
+
+Use curl to POST a file to the server
+
+```bash
+$ curl -sSX POST --data-binary @test/asset/score-0-cap-sys-admin.yml http://localhost:8080/scan
+...
+```
+
+Don't forget to stop the server.
+
+## Kubesec-as-a-Service
+
+Kubesec is also available via HTTPS at [v2.kubesec.io/scan](https://v2.kubesec.io/scan)
+
+Please do not submit sensitive YAML to this service.
+
+The service is ran on a good faith best effort basis.
+
+#### Command line usage:
+
+```bash
+$ curl -sSX POST --data-binary @"k8s-deployment.yaml" https://v2.kubesec.io/scan
+```
+
+#### Usage example:
+
+Define a BASH function
+
+```bash
+$ kubesec ()
+{
+    local FILE="${1:-}";
+    [[ ! -e "${FILE}" ]] && {
+        echo "kubesec: ${FILE}: No such file" >&2;
+        return 1
+    };
+    curl --silent \
+      --compressed \
+      --connect-timeout 5 \
+      -sSX POST \
+      --data-binary=@"${FILE}" \
+      https://v2.kubesec.io/scan
+}
+```
+
+POST a Kubernetes resource to v2.kubesec.io/scan
+
+```bash
+$ kubesec ./deployment.yml
+```
+
+Return non-zero status code is the score is not greater than 10
+
+```bash
+$ kubesec ./score-9-deployment.yml | jq --exit-status '.score > 10' >/dev/null
+# status code 1
+```
+
+## Example output
+
+Kubesec returns a returns a JSON array, and can scan multiple YAML documents in a single input file.
+
+```json
+[
+  {
+    "object": "Pod/security-context-demo.default",
+    "valid": true,
+    "message": "Failed with a score of -30 points",
+    "score": -30,
+    "scoring": {
+      "critical": [
+        {
+          "selector": "containers[] .securityContext .capabilities .add == SYS_ADMIN",
+          "reason": "CAP_SYS_ADMIN is the most privileged capability and should always be avoided",
+          "points": -30
+        }
+      ],
+      "advise": [
+        {
+          "selector": "containers[] .securityContext .runAsNonRoot == true",
+          "reason": "Force the running image to run as a non-root user to ensure least privilege",
+          "points": 1
+        },
+        {
+          // ...
+        }
+      ]
+    }
+  }
+]
+```
+
+---
+
+## Contributors
+
+Thanks to our awesome contributors!
+
+- [Andrew Martin](@sublimino)
+- [Stefan Prodan](@stefanprodan)
+- [Jack Kelly](@06kellyjac)
+
+## Getting Help
+
+If you have any questions about Kubesec and Kubernetes security:
+
+- Read the Kubesec docs
+- Reach out on Twitter to [@sublimino](https://twitter.com/sublimino) or [@controlplaneio](https://twitter.com/controlplaneio)
+- File an issue
+
+Your feedback is always welcome!
+
+[testing_workflow]: https://github.com/controlplaneio/kubesec/actions?query=workflow%3ATesting
+[testing_workflow_badge]: https://github.com/controlplaneio/kubesec/workflows/Testing/badge.svg
+[security_workflow]: https://github.com/controlplaneio/kubesec/actions?query=workflow%3A%22Security+Analysis%22
+[security_workflow_badge]: https://github.com/controlplaneio/kubesec/workflows/Security%20Analysis/badge.svg
+[release_workflow]: https://github.com/controlplaneio/kubesec/actions?query=workflow%3ARelease
+[release_workflow_badge]: https://github.com/controlplaneio/kubesec/workflows/Release/badge.svg
+[goreportcard]: https://goreportcard.com/report/github.com/controlplaneio/kubesec
+[goreportcard_badge]: https://goreportcard.com/badge/github.com/controlplaneio/kubesec
+[go_dev]: https://pkg.go.dev/github.com/controlplaneio/kubesec/v2
+[go_dev_badge]: https://pkg.go.dev/badge/github.com/controlplaneio/kubesec/v2

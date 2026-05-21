@@ -176,13 +176,14 @@ jobs:
           tar xf kubesec_linux_amd64.tar.gz
           sudo mv kubesec /usr/local/bin
 
-      - name: Security scan Kubernetes manifests with kubesec
+      - name: Security scan Kubernetes workloads with kubesec
         run: |
-          for file in kubernetes/*deployment.yml kubernetes/*service.yml; do
+          for file in kubernetes/*deployment.yml; do
             [ -e "$file" ] || continue
             echo "Security scanning $file"
             kubesec scan "$file" | jq '.[] | select(.score < 5)' | grep -q . && echo "⚠️  $file has low security score" && exit 1 || true
           done
+          echo "Note: Service manifests are verified by kubeval; kubesec currently focuses on workload resources."
 
   # Stage 4: Deploy to Kubernetes
   deploy:

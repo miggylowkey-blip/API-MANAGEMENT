@@ -3,11 +3,17 @@ kind: Service
 metadata:
   name: postgres
   namespace: api-managementz
+  labels:
+    app.kubernetes.io/name: postgres
+    app.kubernetes.io/component: database
+    app.kubernetes.io/part-of: api-managementz
+  annotations:
+    kubernetes.io/cluster-service: "true"
 spec:
   selector:
     app: postgres
   ports:
-    - name: postgres
+    - name: tcp-postgres
       port: 5432
       targetPort: 5432
       protocol: TCP
