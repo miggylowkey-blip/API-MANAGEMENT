@@ -1,0 +1,4 @@
+# Kubernetes manifests for API-MANAGEMENTZ are now split into separate files.
+# Apply with `kubectl apply -f .` from this folder.
+# See README.md for full details.
+ 

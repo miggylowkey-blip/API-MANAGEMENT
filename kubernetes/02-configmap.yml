@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: api-managementz-config
+  namespace: api-managementz
+data:
+  PORT: "8080"
+  RATE_LIMIT_RPS: "5"
+  RATE_LIMIT_BURST: "10"
+  DB_HOST: postgres
+  REDIS_URL: redis://redis:6379

@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: api-managementz-quota
+  namespace: api-managementz
+spec:
+  hard:
+    cpu: "1"
+    memory: 1Gi
