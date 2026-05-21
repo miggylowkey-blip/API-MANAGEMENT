@@ -7,12 +7,15 @@ spec:
   selector:
     app: postgres
   ports:
-    - port: 5432
+    - name: postgres
+      port: 5432
       targetPort: 5432
       protocol: TCP
+      appProtocol: tcp
   type: ClusterIP
   sessionAffinity: None
   internalTrafficPolicy: Local
+  publishNotReadyAddresses: false
   ipFamilyPolicy: SingleStack
   ipFamilies:
     - IPv4
