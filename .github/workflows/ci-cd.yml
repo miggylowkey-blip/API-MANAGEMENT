@@ -213,6 +213,14 @@ jobs:
       - name: Apply Kubernetes manifests
         run: |
           kubectl apply -f kubernetes/ -n api-managementz
+      - name: Debug Cluster State Before Rollout Wait
+        run: |
+          echo "=== Checking Pod Statuses ==="
+          kubectl get pods -n api-managementz
+          echo "=== Checking Deployment Resource Names ==="
+          kubectl get deployments -n api-managementz
+          echo "=== Checking Event Logs for Errors ==="
+          kubectl get events -n api-managementz --sort-by='.metadata.creationTimestamp' | tail -n 20
 
       # 🌟 SWAPPED: Now we can safely patch the image container (Make sure container name matches your YAML!)
       - name: Update image in deployment
