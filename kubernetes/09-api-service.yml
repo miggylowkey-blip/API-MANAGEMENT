@@ -12,8 +12,11 @@ spec:
       port: 80
       targetPort: 8080
       protocol: TCP
+      appProtocol: http
   sessionAffinity: None
+  internalTrafficPolicy: Local
   externalTrafficPolicy: Local
+  publishNotReadyAddresses: false
   ipFamilyPolicy: SingleStack
   ipFamilies:
     - IPv4
