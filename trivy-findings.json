@@ -1,0 +1,116 @@
+{
+  "SchemaVersion": 2,
+  "Trivy": {
+    "Version": "0.70.0"
+  },
+  "ReportID": "019e4b81-39cd-711c-bf32-5759ac334063",
+  "CreatedAt": "2026-05-21T17:07:00.68507556Z",
+  "ArtifactID": "sha256:6bbf8a72c7da291bd024cc871c0736ac2477c3f27fb38caa8fc7ce8d9a0b968f",
+  "ArtifactName": ".",
+  "ArtifactType": "repository",
+  "Metadata": {
+    "RepoURL": "https://github.com/miggylowkey-blip/API-MANAGEMENT.git",
+    "Branch": "main",
+    "Commit": "6519559c39989a7c944162bff44a20203c64c5a8",
+    "CommitMsg": "changes",
+    "Author": "MIGGYYYYY \u003cmiggylowkey@gmail.com\u003e",
+    "Committer": "MIGGYYYYY \u003cmiggylowkey@gmail.com\u003e"
+  },
+  "Results": [
+    {
+      "Target": "go.mod",
+      "Class": "lang-pkgs",
+      "Type": "gomod",
+      "Packages": [
+        {
+          "ID": "api-managementz",
+          "Name": "api-managementz",
+          "Identifier": {
+            "PURL": "pkg:golang/api-managementz",
+            "UID": "4bb112e7c5ea9ddf"
+          },
+          "Relationship": "root",
+          "DependsOn": [
+            "github.com/lib/pq@v1.12.3",
+            "golang.org/x/crypto@v0.37.0",
+            "github.com/cespare/xxhash/v2@v2.3.0",
+            "github.com/joho/godotenv@v1.5.1",
+            "github.com/redis/go-redis/v9@v9.19.0",
+            "go.uber.org/atomic@v1.11.0"
+          ],
+          "AnalyzedBy": "gomod"
+        },
+        {
+          "ID": "github.com/lib/pq@v1.12.3",
+          "Name": "github.com/lib/pq",
+          "Identifier": {
+            "PURL": "pkg:golang/github.com/lib/pq@v1.12.3",
+            "UID": "67b2a317998874e7"
+          },
+          "Version": "v1.12.3",
+          "Relationship": "direct",
+          "AnalyzedBy": "gomod"
+        },
+        {
+          "ID": "golang.org/x/crypto@v0.37.0",
+          "Name": "golang.org/x/crypto",
+          "Identifier": {
+            "PURL": "pkg:golang/golang.org/x/crypto@v0.37.0",
+            "UID": "6b06949e381f8d3b"
+          },
+          "Version": "v0.37.0",
+          "Relationship": "direct",
+          "AnalyzedBy": "gomod"
+        },
+        {
+          "ID": "github.com/cespare/xxhash/v2@v2.3.0",
+          "Name": "github.com/cespare/xxhash/v2",
+          "Identifier": {
+            "PURL": "pkg:golang/github.com/cespare/xxhash/v2@v2.3.0",
+            "UID": "add05265e45ca78a"
+          },
+          "Version": "v2.3.0",
+          "Indirect": true,
+          "Relationship": "indirect",
+          "AnalyzedBy": "gomod"
+        },
+        {
+          "ID": "github.com/joho/godotenv@v1.5.1",
+          "Name": "github.com/joho/godotenv",
+          "Identifier": {
+            "PURL": "pkg:golang/github.com/joho/godotenv@v1.5.1",
+            "UID": "190c7a7c2252c46b"
+          },
+          "Version": "v1.5.1",
+          "Indirect": true,
+          "Relationship": "indirect",
+          "AnalyzedBy": "gomod"
+        },
+        {
+          "ID": "github.com/redis/go-redis/v9@v9.19.0",
+          "Name": "github.com/redis/go-redis/v9",
+          "Identifier": {
+            "PURL": "pkg:golang/github.com/redis/go-redis/v9@v9.19.0",
+            "UID": "1375df88b470c98f"
+          },
+          "Version": "v9.19.0",
+          "Indirect": true,
+          "Relationship": "indirect",
+          "AnalyzedBy": "gomod"
+        },
+        {
+          "ID": "go.uber.org/atomic@v1.11.0",
+          "Name": "go.uber.org/atomic",
+          "Identifier": {
+            "PURL": "pkg:golang/go.uber.org/atomic@v1.11.0",
+            "UID": "6b5f12371ae4799c"
+          },
+          "Version": "v1.11.0",
+          "Indirect": true,
+          "Relationship": "indirect",
+          "AnalyzedBy": "gomod"
+        }
+      ]
+    }
+  ]
+}
