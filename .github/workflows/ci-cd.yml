@@ -199,6 +199,9 @@ jobs:
       # 🌟 Creates a temporary cluster right inside the runner for end-to-end testing
       - name: Create local cluster with Kind
         uses: helm/kind-action@v1.10.0
+        with:
+            cluster_name: kind
+            wait: 60s
 
       - name: Configure kubectl
         uses: azure/setup-kubectl@v4
