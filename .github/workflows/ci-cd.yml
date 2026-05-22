@@ -208,6 +208,12 @@ jobs:
       - name: Create namespace
         run: |
           kubectl create namespace api-managementz --dry-run=client -o yaml | kubectl apply -f -
+      
+      - name: Pull and load image into Kind
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+          docker pull ${{ needs.build.outputs.image-tag }}
+          kind load docker-image ${{ needs.build.outputs.image-tag }}
 
       # 🌟 SWAPPED: We apply the manifests FIRST so the resources exist
       - name: Apply Kubernetes manifests
@@ -228,7 +234,7 @@ jobs:
           kubectl set image deployment/api-managementz \
             api-managementz=${{ needs.build.outputs.image-tag }} \
             -n api-managementz \
-            --record=true || true
+           
 
       - name: Wait for rollout
         run: |
