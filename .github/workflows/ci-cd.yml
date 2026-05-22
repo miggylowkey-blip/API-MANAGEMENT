@@ -222,8 +222,17 @@ jobs:
         run: |
           kubectl create namespace api-managementz --dry-run=client -o yaml | kubectl apply -f -
       
+      - name: Create secrets from GitHub Secrets
+        run: |
+          kubectl create secret generic api-managementz-secrets \
+            --from-literal=AUTH_SECRET=${{ secrets.AUTH_SECRET }} \
+            --from-literal=DB_USER=api_managementz \
+            --from-literal=DB_PASSWORD=${{ secrets.DB_PASSWORD }} \
+            --from-literal=DB_NAME=api_managementz \
+            --from-literal=DB_SSLMODE=disable \
+            --namespace=api-managementz \
+            --dry-run=client -o yaml | kubectl apply -f -
       
-      # 🌟 SWAPPED: We apply the manifests FIRST so the resources exist
       - name: Apply Kubernetes manifests
         run: |
           kubectl apply -f kubernetes/ -n api-managementz
@@ -236,7 +245,7 @@ jobs:
           echo "=== Checking Event Logs for Errors ==="
           kubectl get events -n api-managementz --sort-by='.metadata.creationTimestamp' | tail -n 20
 
-      # 🌟 SWAPPED: Now we can safely patch the image container (Make sure container name matches your YAML!)
+     
       - name: Update image in deployment
         run: |
           kubectl set image deployment/api-managementz \
