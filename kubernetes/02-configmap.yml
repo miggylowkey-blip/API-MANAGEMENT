@@ -8,4 +8,5 @@ data:
   RATE_LIMIT_RPS: "5"
   RATE_LIMIT_BURST: "10"
   DB_HOST: postgres
+  DB_NAME: api_managementz
   REDIS_URL: redis://redis:6379

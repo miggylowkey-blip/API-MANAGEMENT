@@ -41,7 +41,7 @@ spec:
             - configMapRef:
                 name: api-managementz-config
             - secretRef:
-                name: api-managementz-secrets
+                name: api-managementz-secret
           readinessProbe:
             httpGet:
               path: /health
