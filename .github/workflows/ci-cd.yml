@@ -261,10 +261,10 @@ jobs:
 
       - name: Wait for readiness
         run: |
-          kubectl wait --for=condition=ready pod \
-            -l app=api-managementz \
-            -n api-managementz \
-            --timeout=3m
+          kubectl wait deployment/api-managementz \
+          --for=condition=available \
+          -n api-managementz \
+          --timeout=3m
 
       - name: Health check
         run: |
