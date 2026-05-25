@@ -52,3 +52,8 @@ variable "skip_final_snapshot" {
   type    = bool
   default = true
 }
+
+variable "db_subnet_group_name" {
+  type = string 
+  default = ""
+}

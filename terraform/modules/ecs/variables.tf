@@ -50,7 +50,7 @@ variable "awslogs_region" {
 }
 
 variable "environment" {
-  type = map(string)
+  type    = map(string)
   default = {}
 }
 

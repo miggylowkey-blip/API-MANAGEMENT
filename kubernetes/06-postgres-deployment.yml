@@ -19,6 +19,25 @@ spec:
         runAsGroup: 999
         fsGroup: 999
       automountServiceAccountToken: false
+      initContainers:
+        - name: fix-permissions
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              if [ -d /var/lib/postgresql/data ] && [ ! -z "$(ls -A /var/lib/postgresql/data)" ]; then
+                echo "Data directory has contents, checking if it's valid..."
+                if [ ! -f /var/lib/postgresql/data/PG_VERSION ]; then
+                  echo "Invalid data directory, removing..."
+                  rm -rf /var/lib/postgresql/data/*
+                fi
+              fi
+              mkdir -p /var/lib/postgresql/data
+              chmod 700 /var/lib/postgresql/data
+          volumeMounts:
+            - name: postgres-storage
+              mountPath: /var/lib/postgresql/data
       containers:
         - name: postgres
           image: postgres:16-alpine
@@ -53,8 +72,8 @@ spec:
               command:
                 - pg_isready
                 - -U
-                - api_managementz
-            initialDelaySeconds: 10
+                - postgres
+            initialDelaySeconds: 30
             periodSeconds: 10
             timeoutSeconds: 5
             failureThreshold: 6

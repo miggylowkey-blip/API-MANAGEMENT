@@ -41,29 +41,29 @@ resource "aws_ecs_task_definition" "this" {
   execution_role_arn       = aws_iam_role.ecs_task_execution.arn
 
   container_definitions = jsonencode([{
-  name  = var.container_name
-  image = var.container_image
-  portMappings = [{
-    containerPort = var.container_port
-    protocol      = "tcp"
-  }]
-  environment = local.environment_list
-  healthCheck = {                              # ← at container level
-    command     = ["CMD-SHELL", "curl http://localhost:8080/health || exit 1"]
-    interval    = 30
-    timeout     = 5
-    retries     = 3
-    startPeriod = 60
-  }
-  logConfiguration = {
-    logDriver = "awslogs"
-    options = {                                # ← only logging options here
-      awslogs-group         = var.log_group_name
-      awslogs-region        = var.awslogs_region
-      awslogs-stream-prefix = "ecs"
+    name  = var.container_name
+    image = var.container_image
+    portMappings = [{
+      containerPort = var.container_port
+      protocol      = "tcp"
+    }]
+    environment = local.environment_list
+    healthCheck = { # ← at container level
+      command     = ["CMD-SHELL", "curl http://localhost:8080/health || exit 1"]
+      interval    = 30
+      timeout     = 5
+      retries     = 3
+      startPeriod = 60
     }
-  }
-}])
+    logConfiguration = {
+      logDriver = "awslogs"
+      options = { # ← only logging options here
+        awslogs-group         = var.log_group_name
+        awslogs-region        = var.awslogs_region
+        awslogs-stream-prefix = "ecs"
+      }
+    }
+  }])
 }
 
 resource "aws_ecs_service" "this" {

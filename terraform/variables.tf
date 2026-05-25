@@ -1,11 +1,11 @@
-variable "region"{
-    default = "ap-southeast-2"
+variable "region" {
+  default = "ap-southeast-2"
 }
 
 variable "db_password" {
-    sensitive = true
+  sensitive = true
 }
 
 variable "auth_secret" {
-    sensitive = true
+  sensitive = true
 }
