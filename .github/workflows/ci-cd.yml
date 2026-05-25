@@ -339,6 +339,7 @@ jobs:
   terraform:
     name: Terraform
     runs-on: ubuntu-latest
+    if: false
 
     steps:
       - uses: actions/checkout@v4
